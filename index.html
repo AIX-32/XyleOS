@@ -163,9 +163,9 @@
         const commands = {
             'help': ': List available commands',
             'clear': ': Clear terminal history',
-            'about': ': Show system information',
-            'insert': ': Load HTML file into window',
+            'about': ': Show information',
             'exit': ': Close all windows',
+            'app add': ': Add a new app',
             'app list': ': List available apps',
             'app launch': ': Launch an app by number',
             'app delete': ': Delete an app by number'
@@ -182,13 +182,6 @@
             addToTerminal(`$ ${cmd}`);
             
             switch(cmd.split(' ')[0]) {
-                case 'insert':
-                    const fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.accept = '.html';
-                    fileInput.onchange = (e) => handleInsertCommand(e.target.files[0]);
-                    fileInput.click();
-                    break;
                 case 'app':
                     if (cmd === 'app list') {
                         listApps();
@@ -198,8 +191,14 @@
                     } else if (cmd.startsWith('app delete')) {
                         const index = parseInt(cmd.split(' ')[2]) - 1;
                         deleteApp(index);
+                    } else if (cmd.startsWith('app add')) {
+                        const fileInput = document.createElement('input');
+                        fileInput.type = 'file';
+                        fileInput.accept = '.html';
+                        fileInput.onchange = (e) => handleInsertCommand(e.target.files[0]);
+                        fileInput.click();
                     } else {
-                        addToTerminal('Invalid app command. Use `app list`, `app launch <number>`, or `app delete <number>`.');
+                        addToTerminal('Invalid app command. Use `app list`, `app launch <number>`, `app delete <number>`, or `app add`.');
                     }
                     break;
                 case 'help':
@@ -323,7 +322,7 @@
 
         function showAbout() {
             addToTerminal('==================================');
-            addToTerminal('XyleOS Terminal v1.0');
+            addToTerminal('XyleOS Terminal v0.3');
             addToTerminal('By A_I_X');
             addToTerminal('Type "help" for available commands');
             addToTerminal('==================================');
