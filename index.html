@@ -112,9 +112,33 @@
             transform: translate(-50%, -50%);
             font-size: 200px;
             font-weight: bold;
-            color: rgba(60, 37, 68, 0.1);
+            color: rgba(57, 19, 70, 0.288);
             z-index: -1;
             pointer-events: none;
+        }
+
+        /* Confirmation Dialog Styles */
+        .confirmation-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--window-bg);
+            border: 1px solid var(--primary-color);
+            padding: 20px;
+            z-index: 1000;
+        }
+        .confirmation-dialog button:hover {
+            background: var(--primary-color);
+            color: var(--bg-color);
+        }
+        .confirmation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .confirmation-buttons button {
+            width: 48%;
         }
     </style>
 </head>
@@ -143,7 +167,8 @@
             'insert': ': Load HTML file into window',
             'exit': ': Close all windows',
             'app list': ': List available apps',
-            'app launch': ': Launch an app by number'
+            'app launch': ': Launch an app by number',
+            'app delete': ': Delete an app by number'
         };
 
         input.addEventListener('keypress', (e) => {
@@ -170,8 +195,11 @@
                     } else if (cmd.startsWith('app launch')) {
                         const index = parseInt(cmd.split(' ')[2]) - 1;
                         launchApp(index);
+                    } else if (cmd.startsWith('app delete')) {
+                        const index = parseInt(cmd.split(' ')[2]) - 1;
+                        deleteApp(index);
                     } else {
-                        addToTerminal('Invalid app command. Use `app list` or `app launch <number>`.');
+                        addToTerminal('Invalid app command. Use `app list`, `app launch <number>`, or `app delete <number>`.');
                     }
                     break;
                 case 'help':
@@ -317,43 +345,129 @@
             const reader = new FileReader();
             reader.onload = (event) => {
                 const apps = JSON.parse(localStorage.getItem('apps')) || [];
-                apps.push({ name: file.name, content: event.target.result });
+                apps.push({ 
+                    name: file.name.replace('.html', ''), 
+                    content: event.target.result,
+                    type: 'custom'
+                });
                 localStorage.setItem('apps', JSON.stringify(apps));
                 addToTerminal(`App '${file.name}' uploaded successfully!`);
             };
             reader.readAsText(file);
         }
 
-        function listApps() {
+        async function listApps() {
             const apps = JSON.parse(localStorage.getItem('apps')) || [];
-            if (apps.length === 0) {
+            const defaultApps = ['Calculator', 'html-editor'];
+            const allApps = [...defaultApps.map(name => ({ name, type: 'builtin' })), ...apps];
+            if (allApps.length === 0) {
                 addToTerminal('No apps available.');
             } else {
-                let list = 'Apps:\n';
-                apps.forEach((app, index) => {
-                    list += `${index + 1}. ${app.name}\n`;
+                let list = 'Apps:<br>';
+                allApps.forEach((app, index) => {
+                    if (app.name !== 'index.html') {
+                        list += `${index + 1}. ${app.name}<br>`;
+                    }
                 });
                 addToTerminal(list);
             }
         }
 
-        function launchApp(index) {
+        async function launchApp(index) {
             const apps = JSON.parse(localStorage.getItem('apps')) || [];
-            if (index >= 0 && index < apps.length) {
-                const app = apps[index];
-                const windowElement = document.createElement('div');
-                windowElement.className = 'window';
-                windowElement.innerHTML = `
-                    <div class="window-header">
-                        <span>${app.name}</span>
-                        <span class="close-btn" onclick="this.parentElement.parentElement.remove()">×</span>
-                    </div>
-                    <iframe class="window-content" src="data:text/html,${encodeURIComponent(app.content)}"></iframe>
-                `;
-                document.body.appendChild(windowElement);
-                windowElement.style.display = 'block';
-                makeDraggable(windowElement);
-                makeResizable(windowElement);
+            const defaultApps = ['Calculator', 'html-editor'];
+            const allApps = [...defaultApps.map(name => ({ name, type: 'builtin' })), ...apps];
+            if (index >= 0 && index < allApps.length) {
+                const app = allApps[index];
+                try {
+                    const content = app.type === 'builtin'
+                        ? await fetch(`./basic-apps/${app.name}.html`).then(r => r.text())
+                        : app.content;
+                    const windowElement = document.createElement('div');
+                    windowElement.className = 'window';
+                    windowElement.innerHTML = `
+                        <div class='window-header'>
+                            <span>${app.name}</span>
+                            <span class='close-btn' onclick='this.parentElement.parentElement.remove()'>×</span>
+                        </div>
+                        <iframe class='window-content' srcdoc='${content.replace(/'/g, '&apos;')}' onload='initializeApp(this)'></iframe>
+                        <div class='resize-handle'></div>
+                    `;
+                    document.body.appendChild(windowElement);
+                    windowElement.style.display = 'block';
+                    makeDraggable(windowElement);
+                    makeResizable(windowElement);
+                } catch (error) {
+                    console.error('Error loading app:', error);
+                    const windowElement = document.createElement('div');
+                    windowElement.className = 'window';
+                    windowElement.innerHTML = `
+                        <div class='window-header'>
+                            <span>${app.name}</span>
+                            <span class='close-btn' onclick='this.parentElement.parentElement.remove()'>×</span>
+                        </div>
+                        <div id='appContent'><p>Error loading ${app.name}: ${error.message}</p></div>
+                    `;
+                    document.body.appendChild(windowElement);
+                    windowElement.style.display = 'block';
+                    makeDraggable(windowElement);
+                    makeResizable(windowElement);
+                }
+            } else {
+                addToTerminal('Invalid app number.');
+            }
+        }
+
+        function initializeApp(iframe) {
+            console.log('Initializing app...');
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            console.log('Document content:', doc.documentElement.innerHTML);
+            const submitButton = doc.getElementById('submitButton');
+            const textBox = doc.getElementById('textBox');
+            console.log('submitButton:', submitButton);
+            console.log('textBox:', textBox);
+            if (submitButton && textBox) {
+                submitButton.addEventListener('click', function() {
+                    const htmlContent = textBox.value;
+                    window.parent.postMessage({ type: 'renderHTML', content: htmlContent }, '*');
+                });
+            } else {
+                console.error('Could not find required elements in app content');
+            }
+        }
+
+        function showConfirmationDialog(message, callback) {
+            const dialog = document.createElement('div');
+            dialog.className = 'confirmation-dialog';
+            dialog.innerHTML = `
+                <p>${message}</p>
+                <div class='confirmation-buttons'>
+                    <button onclick='this.parentElement.parentElement.remove(); callback(true)'>Yes</button>
+                    <button onclick='this.parentElement.parentElement.remove(); callback(false)'>No</button>
+                </div>
+            `;
+            document.body.appendChild(dialog);
+        }
+
+        function deleteApp(index) {
+            const apps = JSON.parse(localStorage.getItem('apps')) || [];
+            const defaultApps = ['Calculator', 'html-editor'];
+            const allApps = [...defaultApps.map(name => ({ name, type: 'builtin' })), ...apps];
+            if (index >= 0 && index < allApps.length) {
+                const app = allApps[index];
+                if (index >= defaultApps.length) {
+                    showConfirmationDialog(`Are you sure you want to delete '${app.name}'?`, (confirmed) => {
+                        if (confirmed) {
+                            const updatedApps = apps.filter((_, i) => i !== index - defaultApps.length);
+                            localStorage.setItem('apps', JSON.stringify(updatedApps));
+                            addToTerminal(`App '${app.name}' deleted successfully.`);
+                        } else {
+                            addToTerminal('App deletion canceled.');
+                        }
+                    });
+                } else {
+                    addToTerminal('Cannot delete built-in apps.');
+                }
             } else {
                 addToTerminal('Invalid app number.');
             }
@@ -361,7 +475,7 @@
 
         function addToTerminal(text) {
             const line = document.createElement('div');
-            line.textContent = text;
+            line.innerHTML = text;
             terminal.appendChild(line);
             terminal.scrollTop = terminal.scrollHeight;
         }
