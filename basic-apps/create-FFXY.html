@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFXY File Creator</title>
+    <style>
+        :root {
+            --primary-color: rgb(158, 10, 226);
+            --bg-color: #000;
+            --window-bg: #111;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 80vh;
+            max-width: 400px;
+            max-height: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid var(--primary-color);
+        }
+
+        .file-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid var(--primary-color);
+            width: 100%;
+            max-width: 400px;
+            max-height: 400px;
+            padding: 20px;
+            overflow-y: auto;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+        }
+
+        .file-container img {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+            outline: none;
+        }
+
+        button:hover {
+            background: var(--primary-color);
+            color: var(--bg-color);
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            background: var(--window-bg);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            padding: 10px;
+            outline: none;
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: var(--primary-color);
+        }
+
+        select {
+            background: var(--window-bg);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            padding: 5px;
+            outline: none;
+            width: auto;
+            margin: 5px 0;
+        }
+
+        select option {
+            background: var(--window-bg);
+            color: var(--primary-color);
+            border-radius: 0px;
+        }
+
+        select:focus {
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FFXY File System</h1>
+        <label>Type:</label>
+        <select id="fileType">
+            <option value="text">Text</option>
+            <option value="image">Image</option>
+        </select>
+        <br><br>
+        <textarea id="textInput" placeholder="Enter text..." style="width: 300px; height: 100px;"></textarea>
+        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        <br><br>
+        <button onclick="saveFile()">Save .FFXY</button>
+        <button onclick="loadFile()">Load .FFXY</button>
+        <input type="file" id="fileLoader" accept=".FFXY" style="display: none;">
+        <br><br>
+    </div>
+    <div class="file-container">
+        <div id="output"></div>
+    </div>
+    
+    <script>
+        document.getElementById("fileType").addEventListener("change", function() {
+            if (this.value === "text") {
+                document.getElementById("textInput").style.display = "block";
+                document.getElementById("imageInput").style.display = "none";
+            } else {
+                document.getElementById("textInput").style.display = "none";
+                document.getElementById("imageInput").style.display = "block";
+            }
+        });
+
+        function saveFile() {
+            let fileType = document.getElementById("fileType").value;
+            let content = fileType + "\n";
+            
+            if (fileType === "text") {
+                content += document.getElementById("textInput").value;
+            } else if (fileType === "image") {
+                let file = document.getElementById("imageInput").files[0];
+                if (file) {
+                    let reader = new FileReader();
+                    reader.onload = function(event) {
+                        content += event.target.result.split(",")[1];
+                        downloadFile(content, "output.FFXY");
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                } else {
+                    alert("Please select an image");
+                    return;
+                }
+            }
+            downloadFile(content, "output.FFXY");
+        }
+
+        function downloadFile(content, filename) {
+            let blob = new Blob([content], { type: "text/plain" });
+            let a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function loadFile() {
+            document.getElementById("fileLoader").click();
+            document.getElementById("fileLoader").onchange = function(event) {
+                let file = event.target.files[0];
+                if (file) {
+                    let reader = new FileReader();
+                    reader.onload = function(e) {
+                        let lines = e.target.result.split("\n");
+                        let fileType = lines[0].trim();
+                        let content = lines.slice(1).join("\n");
+                        let output = document.getElementById("output");
+                        output.innerHTML = "";
+                        
+                        if (fileType === "text") {
+                            output.innerText = content;
+                        } else if (fileType === "image") {
+                            let img = document.createElement("img");
+                            img.src = "data:image/png;base64," + content;
+                            img.style.maxWidth = "300px";
+                            output.appendChild(img);
+                        } else {
+                            output.innerText = "Unknown file type.";
+                        }
+                        document.querySelector(".file-container").style.display = "block";
+                    };
+                    reader.readAsText(file);
+                }
+            };
+        }
+    </script>
+</body>
+</html>
