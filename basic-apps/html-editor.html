@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTML Editor</title>
+    <style>
+        :root {
+            --primary-color: rgb(158, 10, 226);
+            --bg-color: #000;
+            --window-bg: #111;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            height: 100vh;
+        }
+
+        textarea {
+            width: 100%;
+            height: calc(100% - 40px);
+            background: var(--window-bg);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            font-family: monospace;
+            outline: none;
+        }
+
+        button {
+            margin-top: 10px;
+            background: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            cursor: pointer;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        button:hover {
+            background: var(--primary-color);
+            color: var(--bg-color);
+        }
+
+        #textBox, #submitButton {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <textarea id="textBox" placeholder="Write your HTML here..."></textarea>
+
+    <script>
+        function initializeEditor() {
+            const submitButton = document.getElementById('submitButton');
+            const textBox = document.getElementById('textBox');
+            if (submitButton && textBox) {
+                submitButton.addEventListener('click', function() {
+                    const htmlContent = textBox.value;
+                    window.parent.postMessage({ type: 'renderHTML', content: htmlContent }, '*');
+                });
+            }
+        }
+        initializeEditor();
+    </script>
+</body>
+</html>
