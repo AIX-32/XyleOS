@@ -1,4 +1,4 @@
-# XyleOS---a-web-OS
+# XyleOS a webOS
 A site made to work like an OS. This is mostly a "fun" side project of mine.
                            
           █            █          OS: Xyle 0.1
