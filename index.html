@@ -128,10 +128,7 @@
             padding: 20px;
             z-index: 1000;
         }
-        .confirmation-dialog button:hover {
-            background: var(--primary-color);
-            color: var(--bg-color);
-        }
+        
         .confirmation-buttons {
             display: flex;
             justify-content: space-between;
@@ -139,6 +136,34 @@
         }
         .confirmation-buttons button {
             width: 48%;
+            padding: 10px;
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            cursor: pointer;
+        }
+
+        .confirmation-buttons button:hover {
+            background: var(--primary-color);
+            color: var(--bg-color);
+        }
+
+        .confirmation-dialog input,
+        .confirmation-dialog textarea {
+            width: 93.5%;
+            padding: 10px;
+            margin: 10px 0;
+            background: var(--window-bg);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            outline: none;
+        }
+
+        .confirmation-dialog h3 {
+            margin: 0 0 10px 0;
+            color: var(--primary-color);
         }
     </style>
 </head>
@@ -158,6 +183,7 @@
         const fileInput = document.getElementById('file-input');
         let windows = [];
         let currentTheme = 'dark';
+        let popupOpen = false;
 
         // Command registry
         const commands = {
@@ -167,8 +193,13 @@
             'exit': ': Close all windows',
             'app add': ': Add a new app',
             'app list': ': List available apps',
-            'app launch': ': Launch an app by number',
-            'app delete': ': Delete an app by number'
+            'app run': ': Launch an app by number',
+            'app delete': ': Delete an app by number',
+            'clear cache': ': Clear the app cache',
+            'txt add': ': Add a new text file',
+            'txt read': ': Read a text file',
+            'txt list': ': List text files',
+            'txt delete': ': Delete a text file'
         };
 
         input.addEventListener('keypress', (e) => {
@@ -185,7 +216,7 @@
                 case 'app':
                     if (cmd === 'app list') {
                         listApps();
-                    } else if (cmd.startsWith('app launch')) {
+                    } else if (cmd.startsWith('app run')) {
                         const index = parseInt(cmd.split(' ')[2]) - 1;
                         launchApp(index);
                     } else if (cmd.startsWith('app delete')) {
@@ -198,20 +229,42 @@
                         fileInput.onchange = (e) => handleInsertCommand(e.target.files[0]);
                         fileInput.click();
                     } else {
-                        addToTerminal('Invalid app command. Use `app list`, `app launch <number>`, `app delete <number>`, or `app add`.');
+                        addToTerminal('Invalid app command. Use `app list`, `app run <number>`, `app delete <number>`, or `app add`.');
                     }
                     break;
                 case 'help':
                     showHelp();
                     break;
                 case 'clear':
-                    clearTerminal();
+                    if (cmd === 'clear cache') {
+                        clearCache();
+                    } else {
+                        clearTerminal();
+                    }
                     break;
                 case 'about':
                     showAbout();
                     break;
+                case 'hello':
+                    showbye();
+                    break;
                 case 'exit':
                     closeAllWindows();
+                    break;
+                case 'txt':
+                    if (cmd === 'txt list') {
+                        listTextFiles();
+                    } else if (cmd.startsWith('txt read')) {
+                        const fileName = cmd.split(' ')[2];
+                        readTextFile(fileName);
+                    } else if (cmd.startsWith('txt delete')) {
+                        const fileName = cmd.split(' ')[2];
+                        deleteTextFile(fileName);
+                    } else if (cmd === 'txt add') {
+                        addTextFile();
+                    } else {
+                        addToTerminal('Invalid text command. Use `txt list`, `txt read <name>`, `txt delete <name>`, or `txt add`.');
+                    }
                     break;
                 default:
                     addToTerminal(`Command not found: ${cmd}`);
@@ -322,10 +375,17 @@
 
         function showAbout() {
             addToTerminal('==================================');
-            addToTerminal('XyleOS Terminal v1.0');
+            addToTerminal('XyleOS Terminal v0.4');
+            addToTerminal('==================================');
+            addToTerminal('Thanks for trying XyleOS');
             addToTerminal('By A_I_X');
             addToTerminal('Type "help" for available commands');
             addToTerminal('==================================');
+        }
+
+        function showbye() {
+            addToTerminal('XyleOS: You seem to not know what to do, try doing "app run 2"');
+
         }
 
         function changeTheme(theme) {
@@ -436,16 +496,29 @@
         }
 
         function showConfirmationDialog(message, callback) {
+            popupOpen = true;
             const dialog = document.createElement('div');
             dialog.className = 'confirmation-dialog';
             dialog.innerHTML = `
-                <p>${message}</p>
+                <h3>${message}</h3>
                 <div class='confirmation-buttons'>
-                    <button onclick='this.parentElement.parentElement.remove(); callback(true)'>Yes</button>
-                    <button onclick='this.parentElement.parentElement.remove(); callback(false)'>No</button>
+                    <button id='confirm-yes'>Yes</button>
+                    <button id='confirm-no'>No</button>
                 </div>
             `;
             document.body.appendChild(dialog);
+
+            document.getElementById('confirm-yes').addEventListener('click', () => {
+                callback(true);
+                document.body.removeChild(dialog);
+                popupOpen = false;
+            });
+
+            document.getElementById('confirm-no').addEventListener('click', () => {
+                callback(false);
+                document.body.removeChild(dialog);
+                popupOpen = false;
+            });
         }
 
         function deleteApp(index) {
@@ -472,6 +545,100 @@
             }
         }
 
+        function clearCache() {
+            showConfirmationDialog('Clear all cache? This cannot be undone.', (confirm) => {
+                if (confirm) {
+                    localStorage.clear();
+                    addToTerminal('Cache cleared successfully');
+                } else {
+                    addToTerminal('Cache clear cancelled');
+                }
+            });
+        }
+
+        function showTextFileDialog(title, callback, content = '') {
+            popupOpen = true;
+            const dialog = document.createElement('div');
+            dialog.className = 'confirmation-dialog';
+            dialog.innerHTML = `
+                <h3>${title}</h3>
+                <input type='text' id='filename-input' placeholder='Enter filename...'>
+                <textarea id='file-content-input' placeholder='Enter file content...'>${content}</textarea>
+                <div class='confirmation-buttons'>
+                    <button id='textfile-save'>Save</button>
+                    <button id='textfile-cancel'>Cancel</button>
+                </div>
+            `;
+            document.body.appendChild(dialog);
+
+            document.getElementById('textfile-save').addEventListener('click', () => {
+                const filename = document.getElementById('filename-input').value;
+                const content = document.getElementById('file-content-input').value;
+                if (filename && content) {
+                    callback(filename, content);
+                }
+                document.body.removeChild(dialog);
+                popupOpen = false;
+            });
+
+            document.getElementById('textfile-cancel').addEventListener('click', () => {
+                document.body.removeChild(dialog);
+                popupOpen = false;
+            });
+        }
+
+        function addTextFile() {
+            showTextFileDialog('Create New Text File', (filename, content) => {
+                const textFiles = JSON.parse(localStorage.getItem('textFiles')) || {};
+                if (textFiles[filename]) {
+                    showConfirmationDialog('File already exists. Overwrite?', (confirm) => {
+                        if (confirm) {
+                            textFiles[filename] = content;
+                            localStorage.setItem('textFiles', JSON.stringify(textFiles));
+                            addToTerminal(`Updated text file: ${filename}`);
+                        }
+                    });
+                } else {
+                    textFiles[filename] = content;
+                    localStorage.setItem('textFiles', JSON.stringify(textFiles));
+                    addToTerminal(`Created text file: ${filename}`);
+                }
+            });
+        }
+
+        function readTextFile(fileName) {
+            const textFiles = JSON.parse(localStorage.getItem('textFiles')) || {};
+            if (textFiles[fileName]) {
+                addToTerminal(`Contents of ${fileName}:\n${textFiles[fileName]}`);
+            } else {
+                addToTerminal(`File not found: ${fileName}`);
+            }
+        }
+
+        function listTextFiles() {
+            const textFiles = JSON.parse(localStorage.getItem('textFiles')) || {};
+            if (Object.keys(textFiles).length === 0) {
+                addToTerminal('No text files found');
+            } else {
+                addToTerminal('Text files:\n' + Object.keys(textFiles).join('\n'));
+            }
+        }
+
+        function deleteTextFile(fileName) {
+            const textFiles = JSON.parse(localStorage.getItem('textFiles')) || {};
+            if (textFiles[fileName]) {
+                showConfirmationDialog(`Delete ${fileName}?`, (confirm) => {
+                    if (confirm) {
+                        delete textFiles[fileName];
+                        localStorage.setItem('textFiles', JSON.stringify(textFiles));
+                        addToTerminal(`Deleted text file: ${fileName}`);
+                    }
+                });
+            } else {
+                addToTerminal(`File not found: ${fileName}`);
+            }
+        }
+
         function addToTerminal(text) {
             const line = document.createElement('div');
             line.innerHTML = text;
@@ -480,13 +647,21 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Meta') {
+            if (!popupOpen && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Meta') {
                 input.focus();
             }
         });
 
         // Initial message
+        addToTerminal('========================================================');
+        addToTerminal('██╗░░██╗██╗░░░██╗██╗░░░░░███████╗    ░█████╗░░██████╗');
+        addToTerminal('╚██╗██╔╝╚██╗░██╔╝██║░░░░░██╔════╝    ██╔══██╗██╔════╝');
+        addToTerminal('░╚███╔╝░░╚████╔╝░██║░░░░░█████╗░░    ██║░░██║╚█████╗░');
+        addToTerminal('░██╔██╗░░░╚██╔╝░░██║░░░░░██╔══╝░░    ██║░░██║░╚═══██╗');
+        addToTerminal('██╔╝╚██╗░░░██║░░░███████╗███████╗    ╚█████╔╝██████╔╝');
+        addToTerminal('╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚══════╝    ░╚════╝░╚═════╝░');
         addToTerminal('XyleOS Terminal - Type "help" for available commands');
+        addToTerminal('========================================================');
     </script>
 </body>
 </html>
