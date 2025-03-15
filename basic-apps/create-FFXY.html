@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFXY File Creator</title>
+    <title>FFXY File Explorer</title>
     <style>
         :root {
             --primary-color: rgb(158, 10, 226);
             --bg-color: #000;
-            --window-bg: #111;
+            --window-bg: #000;
         }
 
         body {
@@ -18,34 +18,68 @@
             color: var(--primary-color);
             font-family: monospace;
             height: 100vh;
+            display: flex;
         }
 
-        .container {
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200px;
+            height: 100vh;
+            background: var(--window-bg);
+            padding: 20px;
+            border-right: 1px solid var(--primary-color);
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 80vh;
-            max-width: 400px;
-            max-height: 400px;
-            margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        .sidebar h2 {
+            margin: 10px 0;
+            align-self: flex-start;
+        }
+
+        .sidebar button {
+            width: 100%;
+            margin-bottom: 10px;
+            align-self: flex-start;
+        }
+
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+
+        .file-list li {
+            padding: 5px 0;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-list li:hover {
+            background: var(--primary-color);
+            color: var(--bg-color);
+        }
+
+        .main-content {
+            flex-grow: 1;
             padding: 20px;
-            border: 1px solid var(--primary-color);
+            margin-left: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .file-container {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid var(--primary-color);
             width: 100%;
-            max-width: 400px;
-            max-height: 400px;
-            padding: 20px;
-            overflow-y: auto;
-            display: none;
-            justify-content: center;
-            align-items: center;
+            max-width: 800px;
             margin: 0 auto;
+            padding: 20px;
+            border: 1px solid var(--primary-color);
+            background: var(--window-bg);
         }
 
         .file-container img {
@@ -71,25 +105,23 @@
             color: var(--bg-color);
         }
 
-        input[type="text"],
-        textarea,
-        select {
+        .popup-menu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: var(--window-bg);
+            padding: 20px;
             border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-            font-family: monospace;
-            padding: 10px;
-            outline: none;
-            width: 100%;
-            margin: 5px 0;
+            display: none;
         }
 
-        input[type="text"]:focus,
-        textarea:focus {
-            border-color: var(--primary-color);
+        .popup-menu label {
+            display: block;
+            margin-bottom: 10px;
         }
 
-        select {
+        .popup-menu select {
             background: var(--window-bg);
             border: 1px solid var(--primary-color);
             color: var(--primary-color);
@@ -100,50 +132,200 @@
             margin: 5px 0;
         }
 
-        select option {
+        .popup-menu select option {
             background: var(--window-bg);
             color: var(--primary-color);
             border-radius: 0px;
         }
 
-        select:focus {
+        .popup-menu select:focus {
             border-color: var(--primary-color);
+        }
+
+        .popup-menu textarea {
+            background: var(--window-bg);
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            padding: 10px;
+            outline: none;
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .popup-menu textarea:focus {
+            border-color: var(--primary-color);
+        }
+
+        .popup-menu input[type="file"] {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>FFXY File System</h1>
-        <label>Type:</label>
-        <select id="fileType">
-            <option value="text">Text</option>
-            <option value="image">Image</option>
-        </select>
-        <br><br>
-        <textarea id="textInput" placeholder="Enter text..." style="width: 300px; height: 100px;"></textarea>
-        <input type="file" id="imageInput" accept="image/*" style="display: none;">
-        <br><br>
-        <button onclick="saveFile()">Save .FFXY</button>
-        <button onclick="loadFile()">Load .FFXY</button>
+    <div class="sidebar">
+        <h1>Xyle files</h1>
+        <button onclick="showCreateMenu()">Create .FFXY</button>
+        <h2>Files:</h2>
+        <ul id="fileList" class="file-list"></ul>
+    </div>
+    <div class="main-content">
+        <div class="file-container" id="fileContainer">
+            <div id="output"></div>
+        </div>
         <input type="file" id="fileLoader" accept=".FFXY" style="display: none;">
-        <br><br>
     </div>
-    <div class="file-container">
-        <div id="output"></div>
+    <div class="popup-menu" id="createMenu">
+        <div class="container">
+            <h1>FFXY File System</h1>
+            <label>Type:</label>
+            <select id="fileType">
+                <option value="text">Text</option>
+                <option value="image">Image</option>
+            </select>
+            <br><br>
+            <textarea id="textInput" placeholder="Enter text..." style="width: 300px; height: 100px;"></textarea>
+            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+            <br><br>
+            <button onclick="createFile()">Create .FFXY</button>
+            <button onclick="hideCreateMenu()">Cancel</button>
+        </div>
     </div>
-    
-    <script>
-        document.getElementById("fileType").addEventListener("change", function() {
-            if (this.value === "text") {
-                document.getElementById("textInput").style.display = "block";
-                document.getElementById("imageInput").style.display = "none";
-            } else {
-                document.getElementById("textInput").style.display = "none";
-                document.getElementById("imageInput").style.display = "block";
-            }
-        });
 
-        function saveFile() {
+    <script>
+        function addFileToExplorer(content, filename) {
+            let lines = content.split("\n");
+            let fileType = lines[0].trim();
+            let fileContent = lines.slice(1).join("\n");
+            let fileDiv = document.createElement("div");
+            fileDiv.className = "file-item";
+            fileDiv.style.border = "1px solid var(--primary-color)";
+            fileDiv.style.padding = "10px";
+            fileDiv.style.margin = "5px 0";
+            fileDiv.style.cursor = "pointer";
+            fileDiv.textContent = filename;
+            
+            fileDiv.addEventListener("click", function() {
+                let output = document.getElementById("output");
+                output.innerHTML = "";
+                
+                if (fileType === "text") {
+                    output.innerText = fileContent;
+                } else if (fileType === "image") {
+                    let img = document.createElement("img");
+                    img.src = "data:image/png;base64," + fileContent;
+                    img.style.maxWidth = "300px";
+                    output.appendChild(img);
+                } else {
+                    output.innerText = "Unknown file type.";
+                }
+                document.querySelector(".file-container").style.display = "block";
+                // Save opened file state
+                localStorage.setItem("openedFile", filename);
+            });
+            
+            fileDiv.addEventListener("contextmenu", function(event) {
+                event.preventDefault();
+                let menu = document.createElement("div");
+                menu.style.position = "absolute";
+                menu.style.top = event.clientY + "px";
+                menu.style.left = event.clientX + "px";
+                menu.style.background = "var(--window-bg)";
+                menu.style.border = "1px solid var(--primary-color)";
+                menu.style.padding = "5px";
+                menu.style.zIndex = "1000";
+                
+                let deleteOption = document.createElement("div");
+                deleteOption.textContent = "Delete";
+                deleteOption.style.cursor = "pointer";
+                deleteOption.style.padding = "5px";
+                deleteOption.addEventListener("click", function() {
+                    if (confirm("Do you want to delete this file?")) {
+                        localStorage.removeItem(filename);
+                        fileDiv.remove();
+                    }
+                    menu.remove();
+                });
+                
+                let downloadOption = document.createElement("div");
+                downloadOption.textContent = "Download";
+                downloadOption.style.cursor = "pointer";
+                downloadOption.style.padding = "5px";
+                downloadOption.addEventListener("click", function() {
+                    let blob = new Blob([content], { type: "text/plain" });
+                    let a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    menu.remove();
+                });
+                
+                let renameOption = document.createElement("div");
+                renameOption.textContent = "Rename";
+                renameOption.style.cursor = "pointer";
+                renameOption.style.padding = "5px";
+                renameOption.addEventListener("click", function() {
+                    let newName = prompt("Enter new name for the file:", filename);
+                    if (newName && newName !== filename) {
+                        if (newName.endsWith('.FFXY')) {
+                            localStorage.removeItem(filename);
+                            localStorage.setItem(newName, content);
+                            fileDiv.textContent = newName;
+                        } else {
+                            alert("File name must end with '.FFXY'");
+                        }
+                    }
+                    menu.remove();
+                });
+                
+                menu.appendChild(deleteOption);
+                menu.appendChild(downloadOption);
+                menu.appendChild(renameOption);
+                document.body.appendChild(menu);
+                
+                // Remove the menu when clicking outside
+                document.addEventListener("click", function removeMenu() {
+                    menu.remove();
+                    document.removeEventListener("click", removeMenu);
+                }, { once: true });
+            });
+            
+            // Save to local storage
+            localStorage.setItem(filename, content);
+            document.getElementById("fileList").appendChild(fileDiv);
+        }
+
+        // Load files from local storage on page load
+        window.onload = function() {
+            for (let i = 0; i < localStorage.length; i++) {
+                let filename = localStorage.key(i);
+                if (filename.endsWith('.FFXY')) {
+                    let content = localStorage.getItem(filename);
+                    addFileToExplorer(content, filename);
+                }
+            }
+        }
+
+        function showCreateMenu() {
+            document.getElementById("createMenu").style.display = "block";
+            document.getElementById("fileType").addEventListener("change", function() {
+                if (this.value === "text") {
+                    document.getElementById("textInput").style.display = "block";
+                    document.getElementById("imageInput").style.display = "none";
+                } else {
+                    document.getElementById("textInput").style.display = "none";
+                    document.getElementById("imageInput").style.display = "block";
+                }
+            });
+        }
+
+        function hideCreateMenu() {
+            document.getElementById("createMenu").style.display = "none";
+        }
+
+        function createFile() {
             let fileType = document.getElementById("fileType").value;
             let content = fileType + "\n";
             
@@ -155,7 +337,7 @@
                     let reader = new FileReader();
                     reader.onload = function(event) {
                         content += event.target.result.split(",")[1];
-                        downloadFile(content, "output.FFXY");
+                        addFileToExplorer(content, "output.FFXY");
                     };
                     reader.readAsDataURL(file);
                     return;
@@ -164,47 +346,8 @@
                     return;
                 }
             }
-            downloadFile(content, "output.FFXY");
-        }
-
-        function downloadFile(content, filename) {
-            let blob = new Blob([content], { type: "text/plain" });
-            let a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        function loadFile() {
-            document.getElementById("fileLoader").click();
-            document.getElementById("fileLoader").onchange = function(event) {
-                let file = event.target.files[0];
-                if (file) {
-                    let reader = new FileReader();
-                    reader.onload = function(e) {
-                        let lines = e.target.result.split("\n");
-                        let fileType = lines[0].trim();
-                        let content = lines.slice(1).join("\n");
-                        let output = document.getElementById("output");
-                        output.innerHTML = "";
-                        
-                        if (fileType === "text") {
-                            output.innerText = content;
-                        } else if (fileType === "image") {
-                            let img = document.createElement("img");
-                            img.src = "data:image/png;base64," + content;
-                            img.style.maxWidth = "300px";
-                            output.appendChild(img);
-                        } else {
-                            output.innerText = "Unknown file type.";
-                        }
-                        document.querySelector(".file-container").style.display = "block";
-                    };
-                    reader.readAsText(file);
-                }
-            };
+            addFileToExplorer(content, "output.FFXY");
+            hideCreateMenu();
         }
     </script>
 </body>
