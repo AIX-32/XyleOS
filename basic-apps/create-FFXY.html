@@ -109,6 +109,22 @@
         select:focus {
             border-color: var(--primary-color);
         }
+
+        input[type="file"] {
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            padding: 10px;
+            cursor: pointer;
+            margin: 5px;
+            outline: none;
+        }
+
+        input[type="file"]:hover {
+            background: var(--primary-color);
+            color: var(--bg-color);
+        }
     </style>
 </head>
 <body>
@@ -118,14 +134,16 @@
         <select id="fileType">
             <option value="text">Text</option>
             <option value="image">Image</option>
+            <option value="video">Video</option>
         </select>
         <br><br>
         <textarea id="textInput" placeholder="Enter text..." style="width: 300px; height: 100px;"></textarea>
         <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        <input type="file" id="videoInput" accept="video/*" style="display: none;">
         <br><br>
         <button onclick="saveFile()">Save .FFXY</button>
         <button onclick="loadFile()">Load .FFXY</button>
-        <input type="file" id="fileLoader" accept=".FFXY" style="display: none;">
+        <input type="file" id="fileLoader" accept="*" style="display: none;">
         <br><br>
     </div>
     <div class="file-container">
@@ -137,74 +155,68 @@
             if (this.value === "text") {
                 document.getElementById("textInput").style.display = "block";
                 document.getElementById("imageInput").style.display = "none";
-            } else {
+                document.getElementById("videoInput").style.display = "none";
+            } else if (this.value === "image") {
                 document.getElementById("textInput").style.display = "none";
                 document.getElementById("imageInput").style.display = "block";
+                document.getElementById("videoInput").style.display = "none";
+            } else if (this.value === "video") {
+                document.getElementById("textInput").style.display = "none";
+                document.getElementById("imageInput").style.display = "none";
+                document.getElementById("videoInput").style.display = "block";
             }
         });
 
         function saveFile() {
-            let fileType = document.getElementById("fileType").value;
-            let content = fileType + "\n";
-            
-            if (fileType === "text") {
-                content += document.getElementById("textInput").value;
-            } else if (fileType === "image") {
-                let file = document.getElementById("imageInput").files[0];
-                if (file) {
-                    let reader = new FileReader();
-                    reader.onload = function(event) {
-                        content += event.target.result.split(",")[1];
-                        downloadFile(content, "output.FFXY");
-                    };
-                    reader.readAsDataURL(file);
-                    return;
-                } else {
-                    alert("Please select an image");
-                    return;
-                }
+            const fileType = document.getElementById('fileType').value;
+            let content;
+            if (fileType === 'text') {
+                content = document.getElementById('textInput').value;
+            } else if (fileType === 'image') {
+                const file = document.getElementById('imageInput').files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    content = e.target.result;
+                    const blob = new Blob([content], { type: file.type });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'file.ffxy';
+                    a.click();
+                };
+                reader.readAsDataURL(file);
+            } else if (fileType === 'video') {
+                const file = document.getElementById('videoInput').files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    content = e.target.result;
+                    const blob = new Blob([content], { type: file.type });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'file.ffxy';
+                    a.click();
+                };
+                reader.readAsDataURL(file);
             }
-            downloadFile(content, "output.FFXY");
-        }
-
-        function downloadFile(content, filename) {
-            let blob = new Blob([content], { type: "text/plain" });
-            let a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
         }
 
         function loadFile() {
-            document.getElementById("fileLoader").click();
-            document.getElementById("fileLoader").onchange = function(event) {
-                let file = event.target.files[0];
-                if (file) {
-                    let reader = new FileReader();
-                    reader.onload = function(e) {
-                        let lines = e.target.result.split("\n");
-                        let fileType = lines[0].trim();
-                        let content = lines.slice(1).join("\n");
-                        let output = document.getElementById("output");
-                        output.innerHTML = "";
-                        
-                        if (fileType === "text") {
-                            output.innerText = content;
-                        } else if (fileType === "image") {
-                            let img = document.createElement("img");
-                            img.src = "data:image/png;base64," + content;
-                            img.style.maxWidth = "300px";
-                            output.appendChild(img);
-                        } else {
-                            output.innerText = "Unknown file type.";
-                        }
-                        document.querySelector(".file-container").style.display = "block";
-                    };
-                    reader.readAsText(file);
+            const file = document.getElementById('fileLoader').files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const output = document.getElementById('output');
+                if (file.type.startsWith('image/')) {
+                    output.innerHTML = `<img src="${content}" alt="Uploaded Image">`;
+                } else if (file.type.startsWith('video/')) {
+                    output.innerHTML = `<video controls><source src="${content}" type="${file.type}"></video>`;
+                } else {
+                    output.innerText = content;
                 }
+                document.querySelector('.file-container').style.display = 'block';
             };
+            reader.readAsDataURL(file);
         }
     </script>
 </body>
