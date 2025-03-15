@@ -8,7 +8,7 @@
         :root {
             --primary-color: rgb(158, 10, 226);
             --bg-color: #000;
-            --window-bg: #000;
+            --window-bg: #111;
         }
 
         body {
@@ -58,7 +58,7 @@
         }
 
         .window-header {
-            background: var(--window-bg);
+            background: rgb(6, 0, 8);
             padding: 5px;
             display: flex;
             justify-content: space-between;
@@ -417,7 +417,7 @@
 
         async function listApps() {
             const apps = JSON.parse(localStorage.getItem('apps')) || [];
-            const defaultApps = ['Calculator', 'html-editor'];
+            const defaultApps = ['Calculator', 'html-editor', 'PaintX'];
             const allApps = [...defaultApps.map(name => ({ name, type: 'builtin' })), ...apps];
             if (allApps.length === 0) {
                 addToTerminal('No apps available.');
@@ -434,7 +434,7 @@
 
         async function launchApp(index) {
             const apps = JSON.parse(localStorage.getItem('apps')) || [];
-            const defaultApps = ['Calculator', 'html-editor'];
+            const defaultApps = ['Calculator', 'html-editor', 'PaintX'];
             const allApps = [...defaultApps.map(name => ({ name, type: 'builtin' })), ...apps];
             if (index >= 0 && index < allApps.length) {
                 const app = allApps[index];
@@ -523,7 +523,7 @@
 
         function deleteApp(index) {
             const apps = JSON.parse(localStorage.getItem('apps')) || [];
-            const defaultApps = ['Calculator', 'html-editor'];
+            const defaultApps = ['Calculator', 'html-editor', 'PaintX'];
             const allApps = [...defaultApps.map(name => ({ name, type: 'builtin' })), ...apps];
             if (index >= 0 && index < allApps.length) {
                 const app = allApps[index];
@@ -653,15 +653,10 @@
         });
 
         // Initial message
-        addToTerminal('========================================================');
-        addToTerminal('██╗░░██╗██╗░░░██╗██╗░░░░░███████╗    ░█████╗░░██████╗');
-        addToTerminal('╚██╗██╔╝╚██╗░██╔╝██║░░░░░██╔════╝    ██╔══██╗██╔════╝');
-        addToTerminal('░╚███╔╝░░╚████╔╝░██║░░░░░█████╗░░    ██║░░██║╚█████╗░');
-        addToTerminal('░██╔██╗░░░╚██╔╝░░██║░░░░░██╔══╝░░    ██║░░██║░╚═══██╗');
-        addToTerminal('██╔╝╚██╗░░░██║░░░███████╗███████╗    ╚█████╔╝██████╔╝');
-        addToTerminal('╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚══════╝    ░╚════╝░╚═════╝░');
+        addToTerminal('====================================================');
+        addToTerminal('Welcome');
         addToTerminal('XyleOS Terminal - Type "help" for available commands');
-        addToTerminal('========================================================');
+        addToTerminal('====================================================');
     </script>
 </body>
 </html>
