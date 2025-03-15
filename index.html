@@ -179,7 +179,7 @@
         });
 
         function processCommand(cmd) {
-            addToTerminal(`$ ${cmd}`);
+            addToTerminal(`XY= ${cmd}`);
             
             switch(cmd.split(' ')[0]) {
                 case 'app':
@@ -322,7 +322,7 @@
 
         function showAbout() {
             addToTerminal('==================================');
-            addToTerminal('XyleOS Terminal v0.3');
+            addToTerminal('XyleOS Terminal v1.0');
             addToTerminal('By A_I_X');
             addToTerminal('Type "help" for available commands');
             addToTerminal('==================================');
@@ -478,6 +478,12 @@
             terminal.appendChild(line);
             terminal.scrollTop = terminal.scrollHeight;
         }
+
+        document.addEventListener('keydown', (e) => {
+            if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Meta') {
+                input.focus();
+            }
+        });
 
         // Initial message
         addToTerminal('XyleOS Terminal - Type "help" for available commands');
