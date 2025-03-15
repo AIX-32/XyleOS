@@ -417,7 +417,7 @@
 
         async function listApps() {
             const apps = JSON.parse(localStorage.getItem('apps')) || [];
-            const defaultApps = ['Calculator', 'html-editor', 'PaintX'];
+            const defaultApps = ['calculator', 'html-editor', 'PaintX'];
             const allApps = [...defaultApps.map(name => ({ name, type: 'builtin' })), ...apps];
             if (allApps.length === 0) {
                 addToTerminal('No apps available.');
@@ -434,7 +434,7 @@
 
         async function launchApp(index) {
             const apps = JSON.parse(localStorage.getItem('apps')) || [];
-            const defaultApps = ['Calculator', 'html-editor', 'PaintX'];
+            const defaultApps = ['calculator', 'html-editor', 'PaintX'];
             const allApps = [...defaultApps.map(name => ({ name, type: 'builtin' })), ...apps];
             if (index >= 0 && index < allApps.length) {
                 const app = allApps[index];
