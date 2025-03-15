@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XyleOS</title>
+    <style>
+        :root {
+            --primary-color: rgb(158, 10, 226);
+            --bg-color: #000;
+            --window-bg: #111;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-color);
+            color: var(--primary-color);
+            font-family: monospace;
+            height: 100vh;
+        }
+
+        #terminal {
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+
+        .command-line {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .prompt {
+            margin-right: 10px;
+        }
+
+        #input {
+            background: transparent;
+            border: none;
+            color: var(--primary-color);
+            font-family: monospace;
+            width: 80%;
+            outline: none;
+        }
+
+        .window {
+            position: absolute;
+            background: var(--window-bg);
+            border: 1px solid var(--primary-color);
+            width: 600px;
+            height: 400px;
+            top: 50px;
+            left: 50px;
+            display: none;
+            resize: both;
+            overflow: hidden;
+        }
+
+        .window-header {
+            background: rgb(6, 0, 8);
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            cursor: move;
+        }
+
+        .window-content {
+            height: calc(100% - 30px);
+            width: 100%;
+            border: none;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            color: rgb(158, 10, 226);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .resize-handle {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 15px;
+            height: 15px;
+            cursor: nwse-resize;
+        }
+
+        /* Theme variations */
+        .theme-light {
+            --primary-color: #000;
+            --bg-color: #fff;
+            --window-bg: #eee;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0.01px;
+            height: 0.01px;
+        }
+        ::-webkit-scrollbar-thumb {
+            width: 0.01px;
+            height: 0.01px;
+        }
+
+        .background-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 200px;
+            font-weight: bold;
+            color: rgba(38, 23, 43, 0.1);
+            z-index: -1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-text">XyleOS</div>
+    <div id="terminal"></div>
+    <div class="command-line">
+        <span class="prompt">XY=</span>
+        <input type="text" id="input" autofocus>
+    </div>
+    <input type="file" id="file-input" accept=".html">
+    <div id="output"></div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        const input = document.getElementById('input');
+        const fileInput = document.getElementById('file-input');
+        let windows = [];
+        let currentTheme = 'dark';
+
+        // Command registry
+        const commands = {
+            'help': ': List available commands',
+            'clear': ': Clear terminal history',
+            'about': ': Show system information',
+            'insert': ': Load HTML file into window',
+            'exit': ': Close all windows',
+            'app list': ': List available apps',
+            'app launch': ': Launch an app by number'
+        };
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                processCommand(input.value.trim().toLowerCase());
+                input.value = '';
+            }
+        });
+
+        function processCommand(cmd) {
+            addToTerminal(`$ ${cmd}`);
+            
+            switch(cmd.split(' ')[0]) {
+                case 'insert':
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = '.html';
+                    fileInput.onchange = (e) => handleInsertCommand(e.target.files[0]);
+                    fileInput.click();
+                    break;
+                case 'app':
+                    if (cmd === 'app list') {
+                        listApps();
+                    } else if (cmd.startsWith('app launch')) {
+                        const index = parseInt(cmd.split(' ')[2]) - 1;
+                        launchApp(index);
+                    } else {
+                        addToTerminal('Invalid app command. Use `app list` or `app launch <number>`.');
+                    }
+                    break;
+                case 'help':
+                    showHelp();
+                    break;
+                case 'clear':
+                    clearTerminal();
+                    break;
+                case 'about':
+                    showAbout();
+                    break;
+                case 'exit':
+                    closeAllWindows();
+                    break;
+                default:
+                    addToTerminal(`Command not found: ${cmd}`);
+            }
+        }
+
+        async function loadHTMLContent(content) {
+            const blob = new Blob([content], {type: 'text/html'});
+            return URL.createObjectURL(blob);
+        }
+
+        function createWindow(title, content) {
+            const window = document.createElement('div');
+            window.className = 'window';
+            window.style.display = 'block';
+            window.style.zIndex = windows.length + 1;
+            
+            window.innerHTML = `
+                <div class="window-header">
+                    ${title}
+                    <span class="close-btn" onclick="this.parentElement.parentElement.remove()">✖</span>
+                </div>
+                <iframe class="window-content"></iframe>
+                <div class="resize-handle"></div>
+            `;
+
+            const iframe = window.querySelector('iframe');
+            loadHTMLContent(content).then(url => {
+                iframe.src = url;
+            });
+
+            document.body.appendChild(window);
+            windows.push(window);
+
+            // Make draggable
+            makeDraggable(window);
+            makeResizable(window);
+
+            // Bring to front
+            window.addEventListener('mousedown', () => {
+                windows.forEach(w => w.style.zIndex = 1);
+                window.style.zIndex = windows.length + 1;
+            });
+        }
+
+        function makeDraggable(window) {
+            let isDragging = false;
+            let offset = [0,0];
+            const header = window.querySelector('.window-header');
+            
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offset = [
+                    window.offsetLeft - e.clientX,
+                    window.offsetTop - e.clientY
+                ];
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    window.style.left = (e.clientX + offset[0]) + 'px';
+                    window.style.top = (e.clientY + offset[1]) + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        function makeResizable(window) {
+            const handle = window.querySelector('.resize-handle');
+            let isResizing = false;
+            let startX, startY, startWidth, startHeight;
+
+            handle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = parseInt(document.defaultView.getComputedStyle(window).width, 10);
+                startHeight = parseInt(document.defaultView.getComputedStyle(window).height, 10);
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isResizing) {
+                    window.style.width = (startWidth + e.clientX - startX) + 'px';
+                    window.style.height = (startHeight + e.clientY - startY) + 'px';
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isResizing = false;
+            });
+        }
+
+        // Command implementations
+        function showHelp() {
+            addToTerminal('Available commands:');
+            for (const [cmd, desc] of Object.entries(commands)) {
+                addToTerminal(`  ${cmd.padEnd(10)} ${desc}`);
+            }
+        }
+
+        function clearTerminal() {
+            terminal.innerHTML = '';
+        }
+
+        function showAbout() {
+            addToTerminal('==================================');
+            addToTerminal('XyleOS Terminal v0.1');
+            addToTerminal('By A_I_X');
+            addToTerminal('Type "help" for available commands');
+            addToTerminal('==================================');
+        }
+
+        function changeTheme(theme) {
+            currentTheme = theme === 'light' ? 'light' : 'dark';
+            document.body.className = `theme-${currentTheme}`;
+            addToTerminal(`Theme changed to ${currentTheme}`);
+        }
+
+        function closeAllWindows() {
+            windows.forEach(window => window.remove());
+            windows = [];
+            addToTerminal('All windows closed');
+        }
+
+        function handleInsertCommand(file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const apps = JSON.parse(localStorage.getItem('apps')) || [];
+                apps.push({ name: file.name, content: event.target.result });
+                localStorage.setItem('apps', JSON.stringify(apps));
+                addToTerminal(`App '${file.name}' uploaded successfully!`);
+            };
+            reader.readAsText(file);
+        }
+
+        function listApps() {
+            const apps = JSON.parse(localStorage.getItem('apps')) || [];
+            if (apps.length === 0) {
+                addToTerminal('No apps available.');
+            } else {
+                let list = 'Apps:\n';
+                apps.forEach((app, index) => {
+                    list += `${index + 1}. ${app.name}\n`;
+                });
+                addToTerminal(list);
+            }
+        }
+
+        function launchApp(index) {
+            const apps = JSON.parse(localStorage.getItem('apps')) || [];
+            if (index >= 0 && index < apps.length) {
+                const app = apps[index];
+                const windowElement = document.createElement('div');
+                windowElement.className = 'window';
+                windowElement.innerHTML = `
+                    <div class="window-header">
+                        <span>${app.name}</span>
+                        <span class="close-btn" onclick="this.parentElement.parentElement.remove()">×</span>
+                    </div>
+                    <iframe class="window-content" src="data:text/html,${encodeURIComponent(app.content)}"></iframe>
+                `;
+                document.body.appendChild(windowElement);
+                windowElement.style.display = 'block';
+                makeDraggable(windowElement);
+                makeResizable(windowElement);
+            } else {
+                addToTerminal('Invalid app number.');
+            }
+        }
+
+        function addToTerminal(text) {
+            const line = document.createElement('div');
+            line.textContent = text;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // Initial message
+        addToTerminal('XyleOS Terminal - Type "help" for available commands');
+    </script>
+</body>
+</html>
