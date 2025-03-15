@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
     <title>XyleOS</title>
@@ -177,6 +176,10 @@
     </div>
     <input type="file" id="file-input" accept=".html">
     <div id="output"></div>
+    <div id="webview-window" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 80%; background: white; border: 1px solid #ccc; z-index: 1000;">
+      <iframe id="webview-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+      <button onclick="document.getElementById('webview-window').style.display = 'none';" style="position: absolute; top: 10px; right: 10px; background: red; color: white; border: none; padding: 5px 10px; cursor: pointer;">Close</button>
+    </div>
 
     <script>
         const terminal = document.getElementById('terminal');
@@ -200,7 +203,8 @@
             'txt add': ': Add a new text file',
             'txt read': ': Read a text file',
             'txt list': ': List text files',
-            'txt delete': ': Delete a text file'
+            'txt delete': ': Delete a text file',
+            'webview': ': Open a website in a window'
         };
 
         input.addEventListener('keypress', (e) => {
@@ -266,6 +270,10 @@
                     } else {
                         addToTerminal('Invalid text command. Use `txt list`, `txt read <name>`, `txt delete <name>`, or `txt add`.');
                     }
+                    break;
+                case 'webview':
+                    const url = cmd.split(' ')[1];
+                    webview(url);
                     break;
                 default:
                     addToTerminal(`Command not found: ${cmd}`);
@@ -376,7 +384,7 @@
 
         function showAbout() {
             addToTerminal('==================================');
-            addToTerminal('XyleOS Terminal v0.4');
+            addToTerminal('XyleOS Terminal v0.5');
             addToTerminal('==================================');
             addToTerminal('Thanks for trying XyleOS');
             addToTerminal('By A_I_X');
@@ -638,6 +646,47 @@
             } else {
                 addToTerminal(`File not found: ${fileName}`);
             }
+        }
+
+        function webview(sitelink) {
+            const iframe = document.createElement('iframe');
+            iframe.src = sitelink;
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            openWindow('Webview', iframe);
+        }
+
+        function openWindow(title, content) {
+            const window = document.createElement('div');
+            window.className = 'window';
+            window.style.display = 'block';
+            window.style.zIndex = windows.length + 1;
+            
+            window.innerHTML = `
+                <div class="window-header">
+                    ${title}
+                    <span class="close-btn" onclick="this.parentElement.parentElement.remove()">✖</span>
+                </div>
+                <div class="window-content"></div>
+                <div class="resize-handle"></div>
+            `;
+
+            const windowContent = window.querySelector('.window-content');
+            windowContent.appendChild(content);
+
+            document.body.appendChild(window);
+            windows.push(window);
+
+            // Make draggable
+            makeDraggable(window);
+            makeResizable(window);
+
+            // Bring to front
+            window.addEventListener('mousedown', () => {
+                windows.forEach(w => w.style.zIndex = 1);
+                window.style.zIndex = windows.length + 1;
+            });
         }
 
         function addToTerminal(text) {
