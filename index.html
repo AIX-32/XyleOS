@@ -165,6 +165,21 @@
             margin: 0 0 10px 0;
             color: var(--primary-color);
         }
+
+        /* Add typing animation styles */
+        .typing-text {
+            display: block;
+            line-height: 1.2;
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            color: var(--primary-color);
+        }
+        
+        .terminal-line {
+            margin-bottom: 2px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -385,7 +400,7 @@
 
         function showAbout() {
             addToTerminal('==================================');
-            addToTerminal('XyleOS Terminal v0.6');
+            addToTerminal('XyleOS Terminal');
             addToTerminal('==================================');
             addToTerminal('Thanks for trying XyleOS');
             addToTerminal('By A_I_X');
@@ -702,10 +717,65 @@
             });
         }
 
+        // Typing effect function
+        async function typeText(text, element) {
+            // Replace <br> tags with newlines for consistent handling
+            text = text.replace(/<br\s*\/?>/gi, '\n');
+            
+            // Split by newlines while preserving empty lines
+            const lines = text.split(/\n/);
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const lineElement = document.createElement('div');
+                lineElement.className = 'typing-text';
+                element.appendChild(lineElement);
+                
+                // Faster typing for empty lines
+                const typeSpeed = line.trim() === '' ? 10 : Math.random() * (30 - 10) + 20;
+                
+                // Add indentation for list items
+                if (line.match(/^\d+\./)) {
+                    lineElement.style.paddingLeft = '20px';
+                }
+                
+                let buffer = '';
+                const chars = line.split('');
+                
+                for (let j = 0; j < chars.length; j++) {
+                    const char = chars[j];
+                    buffer += char;
+                    
+                    // If we encounter the start of an HTML tag
+                    if (char === '<') {
+                        // Collect the entire tag
+                        while (j + 1 < chars.length && chars[j + 1] !== '>') {
+                            j++;
+                            buffer += chars[j];
+                        }
+                        if (j + 1 < chars.length) {
+                            j++;
+                            buffer += chars[j]; // Add the closing '>'
+                        }
+                    } else {
+                        // Add slight variation to each character's typing speed
+                        const charSpeed = typeSpeed + (Math.random() * 10 - 5);
+                        await new Promise(resolve => setTimeout(resolve, charSpeed));
+                    }
+                    lineElement.innerHTML = buffer;
+                }
+                
+                // Shorter pause for empty lines
+                const pauseTime = line.trim() === '' ? 50 : 100;
+                await new Promise(resolve => setTimeout(resolve, pauseTime));
+            }
+        }
+
         function addToTerminal(text) {
             const line = document.createElement('div');
-            line.innerHTML = text;
+            line.className = 'terminal-line';
             terminal.appendChild(line);
+            typeText(text, line);
             terminal.scrollTop = terminal.scrollHeight;
         }
 
@@ -722,7 +792,7 @@
         addToTerminal('░╚███╔╝░░╚████╔╝░██║░░░░░█████╗░░    ██║░░██║╚█████╗░');
         addToTerminal('░██╔██╗░░░╚██╔╝░░██║░░░░░██╔══╝░░    ██║░░██║░╚═══██╗');
         addToTerminal('██╔╝╚██╗░░░██║░░░███████╗███████╗    ╚█████╔╝██████╔╝');
-        addToTerminal('╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚══════╝    ░╚════╝░╚═════╝░  0.6');
+        addToTerminal('╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚══════╝    ░╚════╝░╚═════╝░  0.7');
         addToTerminal('XyleOS Terminal - Type "help" for available commands');
         addToTerminal('========================================================');
     </script>
