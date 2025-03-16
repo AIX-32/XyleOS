@@ -1,70 +1,266 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HTML Editor</title>
     <style>
         :root {
             --primary-color: rgb(158, 10, 226);
             --bg-color: #000;
-            --window-bg: #111;
+            --window-bg: #000;
+            --text-color: rgb(158, 10, 226);
+            --border-color: rgb(158, 10, 226);
         }
 
         body {
+            font-family: monospace;
             margin: 0;
-            padding: 20px;
-            background: var(--bg-color);
-            color: var(--primary-color);
-            font-family: monospace;
+            padding: 0;
+            display: flex;
             height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
         }
 
-        textarea {
+        .container {
+            display: flex;
             width: 100%;
-            height: calc(100% - 40px);
-            background: var(--window-bg);
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-            font-family: monospace;
-            outline: none;
+            height: 100%;
         }
 
-        button {
-            margin-top: 10px;
-            background: transparent;
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-            cursor: pointer;
-            padding: 5px 10px;
+        .editor {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .output-container {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+        }
+
+        h1 {
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
             margin-bottom: 10px;
-            transition: background 0.3s, color 0.3s;
         }
 
-        button:hover {
-            background: var(--primary-color);
+        .tab {
+            padding: 10px;
+            cursor: pointer;
+            background-color: var(--window-bg);
+            margin-right: 10px;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+        }
+
+        .tab.active {
+            background-color: var(--primary-color);
             color: var(--bg-color);
         }
 
-        #textBox, #submitButton {
+        textarea {
+            width: 800px;
+            height: 470px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            background-color: var(--window-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            resize: none;
+            margin-top: 10px;
+            outline: none;
+        }
+
+        .output {
             width: 100%;
+            flex-grow: 1;
+            border: 1px solid var(--border-color);
+            background-color: var(--window-bg);
+            overflow: auto;
             box-sizing: border-box;
+            padding: 10px;
+            color: var(--text-color);
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            font-family: monospace;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+        }
+
+        .preview-button {
+            width: auto;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 0.01px;
+            height: 0.01px;
+        }
+        ::-webkit-scrollbar-thumb {
+            width: 0.01px;
+            height: 0.01px;
         }
     </style>
 </head>
 <body>
-    <textarea id="textBox" placeholder="Write your HTML here..."></textarea>
 
-    <script>
-        function initializeEditor() {
-            const submitButton = document.getElementById('submitButton');
-            const textBox = document.getElementById('textBox');
-            if (submitButton && textBox) {
-                submitButton.addEventListener('click', function() {
-                    const htmlContent = textBox.value;
-                    window.parent.postMessage({ type: 'renderHTML', content: htmlContent }, '*');
-                });
-            }
+<div class="container">
+    <!-- Input Section -->
+    <div class="editor">
+        <h1>HTML Editor</h1>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('html')">index.html</div>
+            <div class="tab" onclick="switchTab('css')">style.css</div>
+            <div class="tab" onclick="switchTab('js')">script.js</div>
+        </div>
+        
+        <!-- Text Areas -->
+        <div id="htmlTab" class="tab-content">
+            <textarea id="htmlInput" spellcheck="false">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Template&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;/body&gt;
+&lt;/html&gt;</textarea>
+        </div>
+        <div id="cssTab" class="tab-content" style="display:none;">
+            <textarea id="cssInput" spellcheck="false" placeholder="Write your CSS code here"></textarea>
+        </div>
+        <div id="jsTab" class="tab-content" style="display:none;">
+            <textarea id="jsInput" spellcheck="false" placeholder="Write your JavaScript code here"></textarea>
+        </div>
+    </div>
+
+    <!-- Output Section -->
+    <div class="output-container">
+        <div class="button-container">
+            <button onclick="updateOutput()">Run</button>
+            <button class="preview-button" onclick="previewCode()">Preview</button>
+        </div>
+        <div class="output" id="htmlOutput"></div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(function(tabContent) {
+            tabContent.style.display = 'none';
+        });
+
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab').forEach(function(tabItem) {
+            tabItem.classList.remove('active');
+        });
+
+        // Show the selected tab content
+        document.getElementById(tab + 'Tab').style.display = 'block';
+
+        // Add active class to the selected tab
+        document.querySelector(`.tab:nth-child(${getTabIndex(tab)})`).classList.add('active');
+    }
+
+    function getTabIndex(tab) {
+        switch (tab) {
+            case 'html': return 1;
+            case 'css': return 2;
+            case 'js': return 3;
+            default: return 1;
         }
-        initializeEditor();
-    </script>
+    }
+
+    function updateOutput() {
+        var htmlCode = document.getElementById("htmlInput").value;
+        var cssCode = document.getElementById("cssInput").value;
+        var jsCode = document.getElementById("jsInput").value;
+
+        var outputDiv = document.getElementById("htmlOutput");
+        outputDiv.innerHTML = htmlCode;
+
+        // Remove any existing style and script tags
+        const existingStyles = document.querySelectorAll('style[data-editor]');
+        const existingScripts = document.querySelectorAll('script[data-editor]');
+        existingStyles.forEach(style => style.remove());
+        existingScripts.forEach(script => script.remove());
+
+        // Add new style and script tags
+        if (cssCode) {
+            var styleTag = document.createElement('style');
+            styleTag.setAttribute('data-editor', 'true');
+            styleTag.innerHTML = cssCode;
+            document.head.appendChild(styleTag);
+        }
+
+        if (jsCode) {
+            var scriptTag = document.createElement('script');
+            scriptTag.setAttribute('data-editor', 'true');
+            scriptTag.innerHTML = jsCode;
+            document.body.appendChild(scriptTag);
+        }
+    }
+
+    function previewCode() {
+        var htmlCode = document.getElementById("htmlInput").value;
+        var cssCode = document.getElementById("cssInput").value;
+        var jsCode = document.getElementById("jsInput").value;
+
+        var newWindow = window.open();
+        newWindow.document.open();
+        newWindow.document.write(htmlCode);
+
+        if (cssCode) {
+            var styleTag = newWindow.document.createElement('style');
+            styleTag.innerHTML = cssCode;
+            newWindow.document.head.appendChild(styleTag);
+        }
+
+        if (jsCode) {
+            var scriptTag = newWindow.document.createElement('script');
+            scriptTag.innerHTML = jsCode;
+            newWindow.document.body.appendChild(scriptTag);
+        }
+
+        newWindow.document.close();
+    }
+</script>
 </body>
 </html>
