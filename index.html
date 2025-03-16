@@ -385,7 +385,7 @@
 
         function showAbout() {
             addToTerminal('==================================');
-            addToTerminal('XyleOS Terminal v0.5');
+            addToTerminal('XyleOS Terminal v0.6');
             addToTerminal('==================================');
             addToTerminal('Thanks for trying XyleOS');
             addToTerminal('By A_I_X');
@@ -572,7 +572,7 @@
             dialog.className = 'confirmation-dialog';
             dialog.innerHTML = `
                 <h3>${title}</h3>
-                <input type='text' id='filename-input' placeholder='Enter filename...'>
+                <input type='text' id='filename-input' placeholder='Enter filename (lowercase, no spaces)...'>
                 <textarea id='file-content-input' placeholder='Enter file content...'>${content}</textarea>
                 <div class='confirmation-buttons'>
                     <button id='textfile-save'>Save</button>
@@ -584,8 +584,20 @@
             document.getElementById('textfile-save').addEventListener('click', () => {
                 const filename = document.getElementById('filename-input').value;
                 const content = document.getElementById('file-content-input').value;
+                
+                // Validate filename
+                if (filename.includes(' ')) {
+                    addToTerminal('Error: Filename cannot contain spaces');
+                    return;
+                }
+                
+                if (filename !== filename.toLowerCase()) {
+                    addToTerminal('Error: Filename must be in lowercase');
+                    return;
+                }
+
                 if (filename && content) {
-                    callback(filename, content);
+                    callback(filename.toLowerCase(), content);
                 }
                 document.body.removeChild(dialog);
                 popupOpen = false;
@@ -708,9 +720,9 @@
         addToTerminal('██╗░░██╗██╗░░░██╗██╗░░░░░███████╗    ░█████╗░░██████╗');
         addToTerminal('╚██╗██╔╝╚██╗░██╔╝██║░░░░░██╔════╝    ██╔══██╗██╔════╝');
         addToTerminal('░╚███╔╝░░╚████╔╝░██║░░░░░█████╗░░    ██║░░██║╚█████╗░');
-        addToTerminal('░██╔██╗░░░╚██╔╝░░██║░░░░░██╔══╝░░    ██║░░██║░╚═══██╗  v0.5');
+        addToTerminal('░██╔██╗░░░╚██╔╝░░██║░░░░░██╔══╝░░    ██║░░██║░╚═══██╗');
         addToTerminal('██╔╝╚██╗░░░██║░░░███████╗███████╗    ╚█████╔╝██████╔╝');
-        addToTerminal('╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚══════╝    ░╚════╝░╚═════╝░');
+        addToTerminal('╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚══════╝    ░╚════╝░╚═════╝░  0.6');
         addToTerminal('XyleOS Terminal - Type "help" for available commands');
         addToTerminal('========================================================');
     </script>
