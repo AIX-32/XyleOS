@@ -200,10 +200,11 @@
             'app run': ': Launch an app by number',
             'app delete': ': Delete an app by number',
             'clear cache': ': Clear the app cache',
-            'txt add': ': Add a new text file',
-            'txt read': ': Read a text file',
-            'txt list': ': List text files',
-            'txt delete': ': Delete a text file',
+            'file add': ': Add a new text file',
+            'file read': ': Read a text file',
+            'file list': ': List text files',
+            'file delete': ': Delete a text file',
+            'Tip': ': For images open the file manger.',
             'webview': ': Open a website in a window'
         };
 
@@ -256,19 +257,19 @@
                 case 'exit':
                     closeAllWindows();
                     break;
-                case 'txt':
-                    if (cmd === 'txt list') {
+                case 'file':
+                    if (cmd === 'file list') {
                         listTextFiles();
-                    } else if (cmd.startsWith('txt read')) {
+                    } else if (cmd.startsWith('file read')) {
                         const fileName = cmd.split(' ')[2];
                         readTextFile(fileName);
-                    } else if (cmd.startsWith('txt delete')) {
+                    } else if (cmd.startsWith('file delete')) {
                         const fileName = cmd.split(' ')[2];
                         deleteTextFile(fileName);
-                    } else if (cmd === 'txt add') {
+                    } else if (cmd === 'file add') {
                         addTextFile();
                     } else {
-                        addToTerminal('Invalid text command. Use `txt list`, `txt read <name>`, `txt delete <name>`, or `txt add`.');
+                        addToTerminal('Invalid text command. Use `file list`, `file read <name>`, `file delete <name>`, or `file add`.');
                     }
                     break;
                 case 'webview':
@@ -707,7 +708,7 @@
         addToTerminal('██╗░░██╗██╗░░░██╗██╗░░░░░███████╗    ░█████╗░░██████╗');
         addToTerminal('╚██╗██╔╝╚██╗░██╔╝██║░░░░░██╔════╝    ██╔══██╗██╔════╝');
         addToTerminal('░╚███╔╝░░╚████╔╝░██║░░░░░█████╗░░    ██║░░██║╚█████╗░');
-        addToTerminal('░██╔██╗░░░╚██╔╝░░██║░░░░░██╔══╝░░    ██║░░██║░╚═══██╗');
+        addToTerminal('░██╔██╗░░░╚██╔╝░░██║░░░░░██╔══╝░░    ██║░░██║░╚═══██╗  v0.5');
         addToTerminal('██╔╝╚██╗░░░██║░░░███████╗███████╗    ╚█████╔╝██████╔╝');
         addToTerminal('╚═╝░░╚═╝░░░╚═╝░░░╚══════╝╚══════╝    ░╚════╝░╚═════╝░');
         addToTerminal('XyleOS Terminal - Type "help" for available commands');
